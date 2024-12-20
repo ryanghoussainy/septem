@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import HeavyButton from "./components/HeavyButton";
 import { colours } from "../constants/colours";
 import { Divider, Text } from "@rneui/themed";
+import { Ionicons } from "@expo/vector-icons";
 
 
 export default function Auth() {
     // User's details
     const [firstName, setFirstName] = useState('');
     const [password, setPassword] = useState('');
+    const [passwordVisible, setPasswordVisible] = useState(false);
 
     // Loading state for sign in and sign up
     const [signInLoading, setSignInLoading] = useState(false);
@@ -82,14 +84,25 @@ export default function Auth() {
                 onChangeText={setFirstName}
             />
 
+
             {/* Input box for password */}
-            <TextInput
-                style={styles.inputBox}
-                placeholderTextColor={colours.placeholder}
-                placeholder="password"
-                secureTextEntry={true}
-                onChangeText={setPassword}
-            />
+            <View style={styles.pwdInputContainer}>
+                <TextInput
+                    style={styles.inputBox}
+                    placeholderTextColor={colours.placeholder}
+                    placeholder="password"
+                    secureTextEntry={!passwordVisible}
+                    onChangeText={setPassword}
+                />
+
+                {/* Button to toggle password visibility */}
+                <TouchableOpacity
+                    style={styles.pwdVisibility}
+                    onPress={() => setPasswordVisible(!passwordVisible)}
+                >
+                    <Ionicons name={passwordVisible ? 'eye' : 'eye-off'} size={24} color={colours.text} />
+                </TouchableOpacity>
+            </View>
 
             {/* Divider */}
             <Divider 
@@ -141,5 +154,14 @@ const styles = StyleSheet.create({
     },
     button: {
         width: "80%",
+    },
+    pwdInputContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    pwdVisibility: {
+        position: "absolute",
+        right: 10,
     },
 });
