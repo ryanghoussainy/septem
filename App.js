@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase';
 import { useEffect, useState } from 'react';
 import Auth from './src/Auth';
 import { colours } from './constants/colours';
+import BottomTabNavigator from './src/navigation/BottomTabNavigator';
 
 export default function App() {
 
@@ -22,7 +23,7 @@ export default function App() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      {session && session.user ? <Text>Logged in</Text> : <Auth />}
+      {session && session.user ? <BottomTabNavigator session={session} /> : <Auth />}
     </View>
   );
 }
@@ -31,7 +32,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colours.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
