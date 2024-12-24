@@ -143,17 +143,24 @@ const dummyData = [
 const groupBySkill = (data) => {
     const grouped = data.reduce((acc, curr) => {
         if (!acc[curr.name]) {
-            acc[curr.name] = [];
+            acc[curr.name] = { achievements: [], achievedCount: 0 };
         }
-        acc[curr.name].push(curr);
+        acc[curr.name].achievements.push(curr);
+        if (curr.is_goal_achieved) {
+            acc[curr.name].achievedCount += 1;
+        }
         return acc;
     }, {});
 
     // Sort each skill by mastery
     for (const skill in grouped) {
-        grouped[skill].sort((a, b) => a.mastery - b.mastery);
+        grouped[skill].achievements.sort((a, b) => a.mastery - b.mastery);
     }
-    return grouped;
+
+    // Sort the skills by the number of achievements achieved
+    const sortedGrouped = Object.entries(grouped).sort((a, b) => b[1].achievedCount - a[1].achievedCount);
+
+    return sortedGrouped;
 };
 
 const Badge = ({ isAchieved, code, mastery, isNextGoal }) => {
@@ -232,7 +239,7 @@ const Home = () => {
         {/* Achievements */}
         <View style={styles.section}>
             <Text style={styles.sectionTitle}>Achievements</Text>
-            {Object.entries(groupedAchievements).map(([skill, achievements]) => (
+            {groupedAchievements.map(([skill, { achievements }]) => (
                 <SkillAchievements key={skill} skill={skill} achievements={achievements} />
             ))}
         </View>
