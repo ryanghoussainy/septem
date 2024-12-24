@@ -1,6 +1,7 @@
 import { Divider } from '@rneui/themed';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions, Modal } from 'react-native';
 import { colours, masteryColours } from '../constants/colours';
+import { useState } from 'react';
 
 const dummyData = [
     {
@@ -140,6 +141,9 @@ const dummyData = [
     },
 ]
 
+const BADGE_SIZE = 50;
+const BADGE_MARGIN = 10; // Margin between badges
+
 const groupBySkill = (data) => {
     const grouped = data.reduce((acc, curr) => {
         if (!acc[curr.name]) {
@@ -163,16 +167,96 @@ const groupBySkill = (data) => {
     return sortedGrouped;
 };
 
-const Badge = ({ isAchieved, code, mastery, isNextGoal }) => {
+const Badge = ({ achievement, isNextGoal }) => {
+    // Modal for badge details
+    const [badgeModalVisible, setBadgeModalVisible] = useState(false);
+
+    // Function to convert mastery level to a nice string
+    const nice_mastery = (mastery) => {
+        switch (mastery) {
+            case 1:
+                return "1st";
+            case 2:
+                return "2nd";
+            case 3:
+                return "3rd";
+            default:
+                return `${mastery}th`;
+        }
+    }
+
+    // Actual badge component
+    const _Badge = () => {
+        return (
+            <View
+                style={[
+                    styles.badge,
+                    { backgroundColor: achievement.is_goal_achieved ? 
+                        masteryColours[achievement.mastery] : colours.cardBG 
+                    },
+                ]}
+            >
+                <Text style={styles.badgeText}>{achievement.is_goal_achieved || isNextGoal ? achievement.code : '???'}</Text>
+            </View>
+        );
+    }
+
     return (
-        <View
-            style={[
-                styles.badge,
-                { backgroundColor: isAchieved ? masteryColours[mastery] : colours.cardBG },
-            ]}
-        >
-            <Text style={styles.badgeText}>{isAchieved || isNextGoal ? code : '???'}</Text>
-        </View>
+        <TouchableOpacity onPress={() => setBadgeModalVisible(true)}>
+            <_Badge />
+
+            {/* Badge details modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={badgeModalVisible}
+                onRequestClose={() => setBadgeModalVisible(false)}
+            >
+                <TouchableOpacity activeOpacity={1} style={styles.badgeModalContainer} onPress={() => setBadgeModalVisible(false)}>
+                    <View style={styles.badgeModalContent}>
+                        <TouchableOpacity style={styles.badgeModalTouchableContainer} activeOpacity={1} onPress={() => { /* Prevent closing modal when badge is pressed */ }}>
+                            {/* Badge at the top */}
+                            <View style={styles.badgeModalBadge}>
+                                <_Badge />
+                            </View>
+
+                            {/* Achievement name, mastery and target value */}
+                            <Text style={styles.badgeModalText}>
+                                {achievement.is_goal_achieved || isNextGoal ? (
+                                    <Text>
+                                        {achievement.name + ' '}
+                                        <Text style={{
+                                            // Grey out colour if goal is not achieved
+                                            color: achievement.is_goal_achieved ? masteryColours[achievement.mastery] : colours.subText
+                                        }}>
+                                            {
+                                                nice_mastery(achievement.mastery)
+                                            }
+                                        {' mastery\n\n'}
+                                        </Text>
+
+                                        {'Complete '}
+                                        <Text style={{
+                                            // Grey out colour if goal is not achieved
+                                            color: achievement.is_goal_achieved ? masteryColours[achievement.mastery] : colours.subText
+                                        }}>
+                                            {!achievement.is_stretch ? achievement.target_value + ' ' : ''}
+                                        </Text>
+                                        {achievement.name}
+                                    </Text>
+                                ) : (
+                                    <Text style={{ color: "grey" }}
+                                    >
+                                        ???
+                                    </Text>
+                                )}
+                            </Text>
+                            
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+        </TouchableOpacity>
     );
 };
 
@@ -181,7 +265,7 @@ const SkillAchievements = ({ skill, achievements }) => {
     // Adjust for screen padding
     width -= 32;
 
-    const badgesPerRow = Math.floor(width / 60);
+    const badgesPerRow = Math.floor(width / (BADGE_SIZE + BADGE_MARGIN));
     const rows = [];
 
     let nextGoalFound = false;
@@ -191,7 +275,7 @@ const SkillAchievements = ({ skill, achievements }) => {
     }
 
     return (
-        <View style={styles.skillContainer}>
+        <View>
             <Text style={styles.skillTitle}>{skill}</Text>
             {rows.map((row, rowIndex) => (
                 <View key={rowIndex} style={styles.badgeRow}>
@@ -202,9 +286,7 @@ const SkillAchievements = ({ skill, achievements }) => {
                         }
                         return <Badge
                             key={achievement.id}
-                            isAchieved={achievement.is_goal_achieved}
-                            code={achievement.code}
-                            mastery={achievement.mastery}
+                            achievement={achievement}
                             isNextGoal={isNextGoal}
                         />
                     })}
@@ -218,6 +300,8 @@ const SkillAchievements = ({ skill, achievements }) => {
 
 const Home = () => {
     const groupedAchievements = groupBySkill(dummyData);
+
+    
     
     return (
     <ScrollView style={styles.container}>
@@ -243,6 +327,8 @@ const Home = () => {
                 <SkillAchievements key={skill} skill={skill} achievements={achievements} />
             ))}
         </View>
+
+        
     </ScrollView>
   );
 }
@@ -301,9 +387,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   badge: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: BADGE_SIZE,
+    height: BADGE_SIZE,
+    borderRadius: BADGE_SIZE / 2,
     marginHorizontal: 5,
   },
   badgeText: {
@@ -312,6 +398,30 @@ const styles = StyleSheet.create({
     lineHeight: 50,
     fontWeight: 'bold',
   },
+  badgeModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  badgeModalContent: {
+    backgroundColor: colours.bg,
+    borderRadius: 8,
+    elevation: 5,
+  },
+  badgeModalTouchableContainer: {
+    padding: 20,
+    paddingTop: 30,
+  },
+  badgeModalText: {
+    color: colours.text,
+    fontSize: 16,
+  },
+  badgeModalBadge: {
+    position: 'absolute',
+    top: -BADGE_SIZE / 2,
+    alignSelf: 'center',
+  }
 });
 
 export default Home;
