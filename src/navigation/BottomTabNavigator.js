@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Home from '../Home';
 import { colours } from '../../constants/colours';
+import Goals from '../Goals';
 
 const Tab = createBottomTabNavigator();
 
@@ -37,7 +38,7 @@ export default function BottomTabNavigator({ session }) {
                 })}
             >
                 <Tab.Screen name="Home" component={Home} />
-                <Tab.Screen name="Goals" component={Home} />
+                <Tab.Screen name="Goals" component={Goals} />
             </Tab.Navigator>
         </NavigationContainer>
     );

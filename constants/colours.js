@@ -7,6 +7,7 @@ export const colours = {
     subText: '#999',
     outline: '#999',   // a grey-ish colour
     cardBG: '#999',
+    darkgrey: '#606060',
 }
 
 // Different colour for each level of mastery
