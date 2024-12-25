@@ -2,6 +2,7 @@ import { Divider } from '@rneui/themed';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions, Modal } from 'react-native';
 import { colours, masteryColours } from '../constants/colours';
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
 const dummyData = [
     {
@@ -138,6 +139,39 @@ const dummyData = [
         is_stretch: false,
         target_value: 70,
         code: "PLU-VII",
+    },
+]
+
+const dummyTodayActivity = [
+    {
+        id: 1,
+        name: "Pushups",
+        created_at: "2021-09-01T10:00:00Z",
+        achieved_value: 20,
+    },
+    {
+        id: 2,
+        name: "Pull ups",
+        created_at: "2021-09-01T10:30:00Z",
+        achieved_value: 5,
+    },
+    {
+        id: 3,
+        name: "The Splits",
+        created_at: "2021-09-01T11:05:23Z",
+        achieved_value: 0,
+    },
+    {
+        id: 4,
+        name: "Pushups",
+        created_at: "2021-09-01T11:04:20Z",
+        achieved_value: 25,
+    },
+    {
+        id: 5,
+        name: "Pushups",
+        created_at: "2021-09-01T12:00:00Z",
+        achieved_value: 2,
     },
 ]
 
@@ -298,10 +332,56 @@ const SkillAchievements = ({ skill, achievements }) => {
     );
 };
 
+const groupTodayActivityBySkill = (data) => {
+    const grouped = data.reduce((acc, curr) => {
+        if (!acc[curr.name]) {
+            acc[curr.name] = []
+        }
+        acc[curr.name].push(curr);
+        return acc;
+    }, {});
+
+    // Sort each skill by time
+    for (const skill in grouped) {
+        grouped[skill].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+
+    return grouped;
+}
+
+const SkillActivity = ({ skill, activities }) => {
+    // State to toggle open/close
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <View style={styles.card}>
+            <TouchableOpacity onPress={() => setIsOpen(!isOpen)} activeOpacity={1}>
+                <Text style={styles.cardText}>{isOpen ? 'v ' : '> '}{skill}</Text>
+            </TouchableOpacity>
+            {isOpen && (
+                <View style={styles.card}>
+                    {activities.map((activity) => (
+                        <View key={activity.id} style={styles.cardSideBySide}>
+                            {/* Display achieved value with a checkmark icon */}
+                            <View style={styles.achievedValueContainer}>
+                                <Ionicons name="checkmark-circle" size={20} />
+                                <Text>{'  ' + activity.achieved_value}</Text>
+                            </View>
+                            
+                            {/* Display time in HH:MM */}
+                            <Text style={styles.cardText}>{new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                        </View>
+                    ))}
+                </View>
+            )}
+        </View>
+    );
+}
+
 const Home = () => {
     const groupedAchievements = groupBySkill(dummyData);
 
-    
+    const groupedTodayActivity = groupTodayActivityBySkill(dummyTodayActivity);
     
     return (
     <ScrollView style={styles.container}>
@@ -313,9 +393,15 @@ const Home = () => {
         <View style={styles.section}>
             <Text style={styles.sectionTitle}>Today's activity</Text>
 
-            <View style={styles.card}>
-                <Text style={styles.cardText}>No activity today</Text>
-            </View>
+            {dummyTodayActivity ? (
+                Object.keys(groupedTodayActivity).map((skill) => (
+                    <SkillActivity key={skill} skill={skill} activities={groupedTodayActivity[skill]} />
+                ))
+            ) : (
+                <View style={styles.card}>
+                    <Text style={styles.cardText}>No activity today</Text>
+                </View>
+            )}
         </View>
 
         <Divider style={styles.divider} />
@@ -381,6 +467,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  cardSideBySide: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 5,
+  },
   badgeRow: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
@@ -421,7 +512,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -BADGE_SIZE / 2,
     alignSelf: 'center',
-  }
+  },
+  achievedValueContainer: {
+    flexDirection: 'row',
+  },
 });
 
 export default Home;
