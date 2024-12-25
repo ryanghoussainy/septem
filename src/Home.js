@@ -146,30 +146,35 @@ const dummyTodayActivity = [
     {
         id: 1,
         name: "Pushups",
+        is_stretch: false,
         created_at: "2021-09-01T10:00:00Z",
         achieved_value: 20,
     },
     {
         id: 2,
         name: "Pull ups",
+        is_stretch: false,
         created_at: "2021-09-01T10:30:00Z",
         achieved_value: 5,
     },
     {
         id: 3,
         name: "The Splits",
+        is_stretch: true,
         created_at: "2021-09-01T11:05:23Z",
         achieved_value: 0,
     },
     {
         id: 4,
         name: "Pushups",
+        is_stretch: false,
         created_at: "2021-09-01T11:04:20Z",
         achieved_value: 25,
     },
     {
         id: 5,
         name: "Pushups",
+        is_stretch: false,
         created_at: "2021-09-01T12:00:00Z",
         achieved_value: 2,
     },
@@ -365,7 +370,7 @@ const SkillActivity = ({ skill, activities }) => {
                             {/* Display achieved value with a checkmark icon */}
                             <View style={styles.achievedValueContainer}>
                                 <Ionicons name="checkmark-circle" size={20} />
-                                <Text>{'  ' + activity.achieved_value}</Text>
+                                <Text>{'  ' + (activity.is_stretch ? (activity.achieved_value == 0 ? "Not Completed" : "Completed") : activity.achieved_value)}</Text>
                             </View>
                             
                             {/* Display time in HH:MM */}
