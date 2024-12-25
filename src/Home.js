@@ -149,6 +149,7 @@ const dummyTodayActivity = [
         is_stretch: false,
         created_at: "2021-09-01T10:00:00Z",
         achieved_value: 20,
+        in_seconds: false,
     },
     {
         id: 2,
@@ -156,6 +157,7 @@ const dummyTodayActivity = [
         is_stretch: false,
         created_at: "2021-09-01T10:30:00Z",
         achieved_value: 5,
+        in_seconds: false,
     },
     {
         id: 3,
@@ -163,6 +165,7 @@ const dummyTodayActivity = [
         is_stretch: true,
         created_at: "2021-09-01T11:05:23Z",
         achieved_value: 0,
+        in_seconds: false,
     },
     {
         id: 4,
@@ -170,6 +173,7 @@ const dummyTodayActivity = [
         is_stretch: false,
         created_at: "2021-09-01T11:04:20Z",
         achieved_value: 25,
+        in_seconds: false,
     },
     {
         id: 5,
@@ -177,7 +181,24 @@ const dummyTodayActivity = [
         is_stretch: false,
         created_at: "2021-09-01T12:00:00Z",
         achieved_value: 2,
+        in_seconds: false,
     },
+    {
+        id: 6,
+        name: "Hanging",
+        is_stretch: false,
+        created_at: "2021-09-01T12:30:00Z",
+        achieved_value: 30,
+        in_seconds: true,
+    },
+    {
+        id: 7,
+        name: "Hanging",
+        is_stretch: false,
+        created_at: "2021-09-01T12:35:00Z",
+        achieved_value: 37,
+        in_seconds: true,
+    }
 ]
 
 const BADGE_SIZE = 50;
@@ -370,7 +391,11 @@ const SkillActivity = ({ skill, activities }) => {
                             {/* Display achieved value with a checkmark icon */}
                             <View style={styles.achievedValueContainer}>
                                 <Ionicons name="checkmark-circle" size={20} />
-                                <Text>{'  ' + (activity.is_stretch ? (activity.achieved_value == 0 ? "Not Completed" : "Completed") : activity.achieved_value)}</Text>
+                                <Text>
+                                    {'  ' + 
+                                    (activity.is_stretch ? (activity.achieved_value == 0 ? "Not Completed" : "Completed") : activity.achieved_value)
+                                    + (activity.in_seconds ? 's' : '')}
+                                </Text>
                             </View>
                             
                             {/* Display time in HH:MM */}
