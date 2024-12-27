@@ -1,12 +1,20 @@
 export const colours = {
-    buttonBG: '#262725',
+    // Button colours
+    greyButtonBG: '#262725',
+    primaryButtonBG: '#333',
     buttonBorder: '#606060',
+
+    // Background colours
     bg: '#1e1e1e',
+    cardBG: '#999',
+    outline: '#999',   // a grey-ish colour
+    
+    // Text colours
     placeholder: '#606060',
     text: '#ddd',
     subText: '#999',
-    outline: '#999',   // a grey-ish colour
-    cardBG: '#999',
+
+    // Common colours
     darkgrey: '#606060',
 }
 
