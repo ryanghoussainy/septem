@@ -469,7 +469,7 @@ const Home = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Today's activity</Text>
 
-        {dummyTodayActivity ? (
+        {dummyTodayActivity.length > 0 ? (
           Object.keys(groupedTodayActivity).map((skill) => (
             <SkillActivity
               key={skill}
