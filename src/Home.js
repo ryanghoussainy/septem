@@ -12,77 +12,15 @@ import {
 import { colours, masteryColours } from "../constants/colours";
 import { useCallback, useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { fetchSkills } from "./operations/Skills";
-import { fetchUserActivity } from "./operations/Activity";
-import { fetchGoals } from "./operations/Goals";
+import { fetchSkills, groupSkillsById } from "./operations/Skills";
+import { fetchUserActivity, groupActivityBySkillId } from "./operations/Activity";
+import { fetchGoals, groupGoalsBySkillId } from "./operations/Goals";
 import { useFocusEffect } from "@react-navigation/native";
 
 
 const BADGE_SIZE = 50;
 const BADGE_MARGIN = 10; // Margin between badges
 
-const groupSkillsById = (skills) => {
-    return skills.reduce((acc, curr) => {
-        acc[curr.id] = curr;
-        return acc;
-    }, {});
-};
-
-const groupGoalsBySkillId = (data, achievedValues) => {
-    const getMaxAchievedValue = (activities) => {
-    let out = activities[0].achieved_value;
-    for (let i = 1; i < activities.length; i++) {
-        if (activities[i].achieved_value > out) {
-            out = activities[i].achieved_value;
-        }
-    }
-    return out;
-  }
-
-  const grouped = data.reduce((acc, curr) => {
-    const skillId = curr.skill_id;
-    if (!acc[skillId]) {
-      acc[skillId] = { goals: [], achievedCount: 0 };
-    }
-    acc[skillId].goals.push(curr);
-    if ((achievedValues[skillId] ? getMaxAchievedValue(achievedValues[skillId]) : 0) >= curr.target_value) {
-      acc[skillId].achievedCount += 1;
-    }
-    return acc;
-  }, {});
-
-  // Sort each skill by mastery
-  for (const skill in grouped) {
-      grouped[skill].goals.sort((a, b) => a.mastery - b.mastery);
-  }
-    
-  // Sort the skills by the number of achievements achieved
-  const sortedGrouped = Object.entries(grouped).sort(
-    (a, b) => b[1].achievedCount - a[1].achievedCount
-  );
-
-  return sortedGrouped;
-};
-
-const groupActivityBySkillId = (data) => {
-    const grouped = data.reduce((acc, curr) => {
-      const skillId = curr.skill_id;
-      if (!acc[skillId]) {
-        acc[skillId] = [];
-      }
-      acc[skillId].push(curr);
-      return acc;
-    }, {});
-  
-    // Sort each skill by time
-    for (const skill in grouped) {
-      grouped[skill].sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
-      );
-    }
-  
-    return grouped;
-  };
 
 const Badge = ({ goal, achievedCount, skillName, isStretch }) => {
   // Modal for badge details
@@ -316,7 +254,7 @@ const Home = ({ session }) => {
     const groupedActivity = groupActivityBySkillId(activity);
 
     // Fetch goals and group by skill id
-    const goals = await fetchGoals(session.user.id);
+    const goals = await fetchGoals();
     setGroupedGoals(groupGoalsBySkillId(goals, groupedActivity));
   };
 
