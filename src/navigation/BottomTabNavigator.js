@@ -37,8 +37,12 @@ export default function BottomTabNavigator({ session }) {
                     }
                 })}
             >
-                <Tab.Screen name="Home" component={Home} />
-                <Tab.Screen name="Goals" component={Goals} />
+                <Tab.Screen name="Home">
+                    {() => <Home session={session} />}
+                </Tab.Screen>
+                <Tab.Screen name="Goals">
+                    {() => <Goals session={session} />}    
+                </Tab.Screen>
             </Tab.Navigator>
         </NavigationContainer>
     );

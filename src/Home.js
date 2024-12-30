@@ -7,228 +7,54 @@ import {
   ScrollView,
   useWindowDimensions,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { colours, masteryColours } from "../constants/colours";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { fetchSkills } from "./operations/Skills";
+import { fetchUserActivity } from "./operations/Activity";
+import { fetchGoals } from "./operations/Goals";
 
-const dummyData = [
-  {
-    id: 1,
-    is_goal_achieved: true,
-    mastery: 1,
-    name: "Pushups",
-    is_stretch: false,
-    target_value: 20,
-    code: "PU-I",
-  },
-  {
-    id: 3,
-    is_goal_achieved: true,
-    mastery: 3,
-    name: "Pushups",
-    is_stretch: false,
-    target_value: 60,
-    code: "PU-III",
-  },
-  {
-    id: 4,
-    is_goal_achieved: true,
-    mastery: 4,
-    name: "Pushups",
-    is_stretch: false,
-    target_value: 80,
-    code: "PU-IV",
-  },
-  {
-    id: 5,
-    is_goal_achieved: true,
-    mastery: 5,
-    name: "Pushups",
-    is_stretch: false,
-    target_value: 100,
-    code: "PU-V",
-  },
-  {
-    id: 6,
-    is_goal_achieved: true,
-    mastery: 6,
-    name: "Pushups",
-    is_stretch: false,
-    target_value: 150,
-    code: "PU-VI",
-  },
-  {
-    id: 7,
-    is_goal_achieved: true,
-    mastery: 7,
-    name: "Pushups",
-    is_stretch: false,
-    target_value: 200,
-    code: "PU-VII",
-  },
-  {
-    id: 8,
-    is_goal_achieved: true,
-    mastery: 1,
-    name: "The Splits",
-    is_stretch: true,
-    target_value: 1,
-    code: "SPL",
-  },
-  {
-    id: 9,
-    is_goal_achieved: true,
-    mastery: 1,
-    name: "Pull ups",
-    is_stretch: false,
-    target_value: 5,
-    code: "PLU-I",
-  },
-  {
-    id: 2,
-    is_goal_achieved: true,
-    mastery: 2,
-    name: "Pushups",
-    is_stretch: false,
-    target_value: 40,
-    code: "PU-II",
-  },
-  {
-    id: 10,
-    is_goal_achieved: false,
-    mastery: 2,
-    name: "Pull ups",
-    is_stretch: false,
-    target_value: 10,
-    code: "PLU-II",
-  },
-  {
-    id: 11,
-    is_goal_achieved: false,
-    mastery: 3,
-    name: "Pull ups",
-    is_stretch: false,
-    target_value: 20,
-    code: "PLU-III",
-  },
-  {
-    id: 12,
-    is_goal_achieved: false,
-    mastery: 4,
-    name: "Pull ups",
-    is_stretch: false,
-    target_value: 30,
-    code: "PLU-IV",
-  },
-  {
-    id: 13,
-    is_goal_achieved: false,
-    mastery: 5,
-    name: "Pull ups",
-    is_stretch: false,
-    target_value: 40,
-    code: "PLU-V",
-  },
-  {
-    id: 14,
-    is_goal_achieved: false,
-    mastery: 6,
-    name: "Pull ups",
-    is_stretch: false,
-    target_value: 50,
-    code: "PLU-VI",
-  },
-  {
-    id: 15,
-    is_goal_achieved: false,
-    mastery: 7,
-    name: "Pull ups",
-    is_stretch: false,
-    target_value: 70,
-    code: "PLU-VII",
-  },
-];
-
-const dummyTodayActivity = [
-  {
-    id: 1,
-    name: "Pushups",
-    is_stretch: false,
-    created_at: "2021-09-01T10:00:00Z",
-    achieved_value: 20,
-    in_seconds: false,
-  },
-  {
-    id: 2,
-    name: "Pull ups",
-    is_stretch: false,
-    created_at: "2021-09-01T10:30:00Z",
-    achieved_value: 5,
-    in_seconds: false,
-  },
-  {
-    id: 3,
-    name: "The Splits",
-    is_stretch: true,
-    created_at: "2021-09-01T11:05:23Z",
-    achieved_value: 0,
-    in_seconds: false,
-  },
-  {
-    id: 4,
-    name: "Pushups",
-    is_stretch: false,
-    created_at: "2021-09-01T11:04:20Z",
-    achieved_value: 25,
-    in_seconds: false,
-  },
-  {
-    id: 5,
-    name: "Pushups",
-    is_stretch: false,
-    created_at: "2021-09-01T12:00:00Z",
-    achieved_value: 2,
-    in_seconds: false,
-  },
-  {
-    id: 6,
-    name: "Hanging",
-    is_stretch: false,
-    created_at: "2021-09-01T12:30:00Z",
-    achieved_value: 30,
-    in_seconds: true,
-  },
-  {
-    id: 7,
-    name: "Hanging",
-    is_stretch: false,
-    created_at: "2021-09-01T12:35:00Z",
-    achieved_value: 37,
-    in_seconds: true,
-  },
-];
 
 const BADGE_SIZE = 50;
 const BADGE_MARGIN = 10; // Margin between badges
 
-const groupBySkill = (data) => {
-  const grouped = data.reduce((acc, curr) => {
-    if (!acc[curr.name]) {
-      acc[curr.name] = { achievements: [], achievedCount: 0 };
+const groupSkillsById = (skills) => {
+    return skills.reduce((acc, curr) => {
+        acc[curr.id] = curr;
+        return acc;
+    }, {});
+};
+
+const groupGoalsBySkillId = (data, achievedValues) => {
+    const getMaxAchievedValue = (activities) => {
+    let out = activities[0].achieved_value;
+    for (let i = 1; i < activities.length; i++) {
+        if (activities[i].achieved_value > out) {
+            out = activities[i].achieved_value;
+        }
     }
-    acc[curr.name].achievements.push(curr);
-    if (curr.is_goal_achieved) {
-      acc[curr.name].achievedCount += 1;
+    return out;
+  }
+
+  const grouped = data.reduce((acc, curr) => {
+    const skillId = curr.skill_id;
+    if (!acc[skillId]) {
+      acc[skillId] = { goals: [], achievedCount: 0 };
+    }
+    acc[skillId].goals.push(curr);
+    if ((achievedValues[skillId] ? getMaxAchievedValue(achievedValues[skillId]) : 0) >= curr.target_value) {
+      acc[skillId].achievedCount += 1;
     }
     return acc;
   }, {});
 
   // Sort each skill by mastery
   for (const skill in grouped) {
-    grouped[skill].achievements.sort((a, b) => a.mastery - b.mastery);
+      grouped[skill].goals.sort((a, b) => a.mastery - b.mastery);
   }
-
+    
   // Sort the skills by the number of achievements achieved
   const sortedGrouped = Object.entries(grouped).sort(
     (a, b) => b[1].achievedCount - a[1].achievedCount
@@ -237,7 +63,27 @@ const groupBySkill = (data) => {
   return sortedGrouped;
 };
 
-const Badge = ({ achievement, isNextGoal }) => {
+const groupActivityBySkillId = (data) => {
+    const grouped = data.reduce((acc, curr) => {
+      const skillId = curr.skill_id;
+      if (!acc[skillId]) {
+        acc[skillId] = [];
+      }
+      acc[skillId].push(curr);
+      return acc;
+    }, {});
+  
+    // Sort each skill by time
+    for (const skill in grouped) {
+      grouped[skill].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+    }
+  
+    return grouped;
+  };
+
+const Badge = ({ goal, achievedCount, skillName, isStretch }) => {
   // Modal for badge details
   const [badgeModalVisible, setBadgeModalVisible] = useState(false);
 
@@ -255,6 +101,12 @@ const Badge = ({ achievement, isNextGoal }) => {
     }
   };
 
+  // Check if goal is achieved by comparing the number of achived goals to the mastery level
+  const isGoalAchieved = goal.mastery <= achievedCount;
+
+  // Check if goal is the next goal to achieve in a similar way
+  const isNextGoal = goal.mastery === achievedCount + 1;
+
   // Actual badge component
   const _Badge = () => {
     return (
@@ -262,15 +114,15 @@ const Badge = ({ achievement, isNextGoal }) => {
         style={[
           styles.badge,
           {
-            backgroundColor: achievement.is_goal_achieved
-              ? masteryColours[achievement.mastery]
+            backgroundColor: isGoalAchieved
+              ? masteryColours[goal.mastery]
               : colours.cardBG,
           },
         ]}
       >
         <Text style={styles.badgeText}>
-          {achievement.is_goal_achieved || isNextGoal
-            ? achievement.code
+          {isGoalAchieved || isNextGoal
+            ? goal.code
             : "???"}
         </Text>
       </View>
@@ -308,18 +160,18 @@ const Badge = ({ achievement, isNextGoal }) => {
 
               {/* Achievement name, mastery and target value */}
               <Text style={styles.badgeModalText}>
-                {achievement.is_goal_achieved || isNextGoal ? (
+                {isGoalAchieved || isNextGoal ? (
                   <Text>
-                    {achievement.name + " "}
+                    {skillName + " "}
                     <Text
                       style={{
                         // Grey out colour if goal is not achieved
-                        color: achievement.is_goal_achieved
-                          ? masteryColours[achievement.mastery]
+                        color: isGoalAchieved
+                          ? masteryColours[goal.mastery]
                           : colours.subText,
                       }}
                     >
-                      {nice_mastery(achievement.mastery)}
+                      {nice_mastery(goal.mastery)}
                       {" mastery\n\n"}
                     </Text>
 
@@ -327,16 +179,16 @@ const Badge = ({ achievement, isNextGoal }) => {
                     <Text
                       style={{
                         // Grey out colour if goal is not achieved
-                        color: achievement.is_goal_achieved
-                          ? masteryColours[achievement.mastery]
+                        color: isGoalAchieved
+                          ? masteryColours[goal.mastery]
                           : colours.subText,
                       }}
                     >
-                      {!achievement.is_stretch
-                        ? achievement.target_value + " "
+                      {!isStretch
+                        ? goal.target_value + " "
                         : ""}
                     </Text>
-                    {achievement.name}
+                    {skillName}
                   </Text>
                 ) : (
                   <Text style={{ color: "grey" }}>???</Text>
@@ -350,7 +202,7 @@ const Badge = ({ achievement, isNextGoal }) => {
   );
 };
 
-const SkillAchievements = ({ skill, achievements }) => {
+const SkillAchievements = ({ goals, achievedCount, skillName, isStretch }) => {
   let { width } = useWindowDimensions();
   // Adjust for screen padding
   width -= 32;
@@ -358,27 +210,23 @@ const SkillAchievements = ({ skill, achievements }) => {
   const badgesPerRow = Math.floor(width / (BADGE_SIZE + BADGE_MARGIN));
   const rows = [];
 
-  let nextGoalFound = false;
-
-  for (let i = 0; i < achievements.length; i += badgesPerRow) {
-    rows.push(achievements.slice(i, i + badgesPerRow));
+  for (let i = 0; i < goals.length; i += badgesPerRow) {
+    rows.push(goals.slice(i, i + badgesPerRow));
   }
 
   return (
     <View>
-      <Text style={styles.skillTitle}>{skill}</Text>
+      <Text style={styles.skillTitle}>{skillName}</Text>
       {rows.map((row, rowIndex) => (
         <View key={rowIndex} style={styles.badgeRow}>
-          {row.map((achievement) => {
-            const isNextGoal = !achievement.is_goal_achieved && !nextGoalFound;
-            if (isNextGoal) {
-              nextGoalFound = true;
-            }
+          {row.map((goal) => {
             return (
               <Badge
-                key={achievement.id}
-                achievement={achievement}
-                isNextGoal={isNextGoal}
+                key={goal.id}
+                goal={goal}
+                achievedCount={achievedCount}
+                skillName={skillName}
+                isStretch={isStretch}
               />
             );
           })}
@@ -390,26 +238,7 @@ const SkillAchievements = ({ skill, achievements }) => {
   );
 };
 
-const groupTodayActivityBySkill = (data) => {
-  const grouped = data.reduce((acc, curr) => {
-    if (!acc[curr.name]) {
-      acc[curr.name] = [];
-    }
-    acc[curr.name].push(curr);
-    return acc;
-  }, {});
-
-  // Sort each skill by time
-  for (const skill in grouped) {
-    grouped[skill].sort(
-      (a, b) => new Date(b.created_at) - new Date(a.created_at)
-    );
-  }
-
-  return grouped;
-};
-
-const SkillActivity = ({ skill, activities }) => {
+const SkillActivity = ({ skillName, activities }) => {
   // State to toggle open/close
   const [isOpen, setIsOpen] = useState(false);
 
@@ -418,7 +247,7 @@ const SkillActivity = ({ skill, activities }) => {
       <TouchableOpacity onPress={() => setIsOpen(!isOpen)} activeOpacity={1}>
         <Text style={styles.cardText}>
           {isOpen ? "v " : "> "}
-          {skill}
+          {skillName}
         </Text>
       </TouchableOpacity>
       {isOpen && (
@@ -454,11 +283,57 @@ const SkillActivity = ({ skill, activities }) => {
   );
 };
 
-const Home = () => {
-  const groupedAchievements = groupBySkill(dummyData);
+const Home = ({ session }) => {
+  const [groupedSkills, setGroupedSkills] = useState([]);
+  const [groupedGoals, setGroupedGoals] = useState([]);
+  const [groupedTodayActivity, setGroupedTodayActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const groupedTodayActivity = groupTodayActivityBySkill(dummyTodayActivity);
+  useEffect(() => {
+    const fetchData = async () => {
+        setLoading(true);
 
+        // Fetch skill and group by id
+        const skills = await fetchSkills();
+        setGroupedSkills(groupSkillsById(skills));
+
+        // Fetch all user activity
+        const activity = await fetchUserActivity(session.user.id);
+
+        // Filter today's activity
+        const today = new Date();
+        const todayActivity = activity.filter(
+            (a) =>
+                new Date(a.created_at).getDate() === today.getDate() &&
+                new Date(a.created_at).getMonth() === today.getMonth() &&
+                new Date(a.created_at).getFullYear() === today.getFullYear()
+        )
+
+        // Group today's activity by skill id
+        const groupedTodayActivity = groupActivityBySkillId(todayActivity);
+        setGroupedTodayActivity(groupedTodayActivity);
+
+        // Group all activity by skill id
+        const groupedActivity = groupActivityBySkillId(activity);
+
+        // Fetch goals and group by skill id
+        const goals = await fetchGoals(session.user.id);
+        setGroupedGoals(groupGoalsBySkillId(goals, groupedActivity));
+
+        setLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  // Loading screen
+  if (loading) {
+    return (
+        <View style={[styles.container, { justifyContent: "center" }]}>
+            <ActivityIndicator size="large" color={colours.text} />
+        </View>
+    )
+  }
+  
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -469,12 +344,12 @@ const Home = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Today's activity</Text>
 
-        {dummyTodayActivity.length > 0 ? (
-          Object.keys(groupedTodayActivity).map((skill) => (
+        {Object.keys(groupedTodayActivity).length > 0 ? (
+          Object.keys(groupedTodayActivity).map((skillId) => (
             <SkillActivity
-              key={skill}
-              skill={skill}
-              activities={groupedTodayActivity[skill]}
+              key={skillId}
+              skillName={groupedSkills[skillId].name}
+              activities={groupedTodayActivity[skillId]}
             />
           ))
         ) : (
@@ -489,11 +364,13 @@ const Home = () => {
       {/* Achievements */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Achievements</Text>
-        {groupedAchievements.map(([skill, { achievements }]) => (
+        {groupedGoals.map(([skillId, { achievedCount, goals }]) => (
           <SkillAchievements
-            key={skill}
-            skill={skill}
-            achievements={achievements}
+            key={skillId}
+            goals={goals}
+            achievedCount={achievedCount}
+            skillName={groupedSkills[skillId].name}
+            isStretch={groupedSkills[skillId].is_stretch}
           />
         ))}
       </View>
