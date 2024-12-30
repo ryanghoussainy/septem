@@ -10,11 +10,12 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { colours, masteryColours } from "../constants/colours";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { fetchSkills } from "./operations/Skills";
 import { fetchUserActivity } from "./operations/Activity";
 import { fetchGoals } from "./operations/Goals";
+import { useFocusEffect } from "@react-navigation/native";
 
 
 const BADGE_SIZE = 50;
@@ -289,40 +290,48 @@ const Home = ({ session }) => {
   const [groupedTodayActivity, setGroupedTodayActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Function to fetch the backend data
+  const fetchData = async () => {
+    // Fetch skill and group by id
+    const skills = await fetchSkills();
+    setGroupedSkills(groupSkillsById(skills));
+
+    // Fetch all user activity
+    const activity = await fetchUserActivity(session.user.id);
+
+    // Filter today's activity
+    const today = new Date();
+    const todayActivity = activity.filter(
+        (a) =>
+            new Date(a.created_at).getDate() === today.getDate() &&
+            new Date(a.created_at).getMonth() === today.getMonth() &&
+            new Date(a.created_at).getFullYear() === today.getFullYear()
+    )
+
+    // Group today's activity by skill id
+    const groupedTodayActivity = groupActivityBySkillId(todayActivity);
+    setGroupedTodayActivity(groupedTodayActivity);
+
+    // Group all activity by skill id
+    const groupedActivity = groupActivityBySkillId(activity);
+
+    // Fetch goals and group by skill id
+    const goals = await fetchGoals(session.user.id);
+    setGroupedGoals(groupGoalsBySkillId(goals, groupedActivity));
+  };
+
+  // Fetch data when user navigates to the screen
+  useFocusEffect(
+    useCallback(() => {
+        fetchData();
+    }, [])
+  );
+
+  // Fetch data when the screen is first loaded
   useEffect(() => {
-    const fetchData = async () => {
-        setLoading(true);
+    fetchData()
 
-        // Fetch skill and group by id
-        const skills = await fetchSkills();
-        setGroupedSkills(groupSkillsById(skills));
-
-        // Fetch all user activity
-        const activity = await fetchUserActivity(session.user.id);
-
-        // Filter today's activity
-        const today = new Date();
-        const todayActivity = activity.filter(
-            (a) =>
-                new Date(a.created_at).getDate() === today.getDate() &&
-                new Date(a.created_at).getMonth() === today.getMonth() &&
-                new Date(a.created_at).getFullYear() === today.getFullYear()
-        )
-
-        // Group today's activity by skill id
-        const groupedTodayActivity = groupActivityBySkillId(todayActivity);
-        setGroupedTodayActivity(groupedTodayActivity);
-
-        // Group all activity by skill id
-        const groupedActivity = groupActivityBySkillId(activity);
-
-        // Fetch goals and group by skill id
-        const goals = await fetchGoals(session.user.id);
-        setGroupedGoals(groupGoalsBySkillId(goals, groupedActivity));
-
-        setLoading(false);
-    }
-    fetchData();
+    setLoading(false);
   }, []);
 
   // Loading screen

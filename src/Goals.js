@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { colours, masteryColours } from '../constants/colours';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@rneui/themed';
 import { Modal } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
@@ -325,6 +325,10 @@ const Goals = () => {
 
     const [logModalVisible, setLogModalVisible] = useState(false);
     const [selectedGoal, setSelectedGoal] = useState(null);
+
+    useEffect(() => {
+        
+    }, [])
 
     const handleLog = (goal) => {
         setSelectedGoal(goal);
