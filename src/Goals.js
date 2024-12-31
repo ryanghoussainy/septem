@@ -1,7 +1,6 @@
 import { ScrollView, StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { colours, masteryColours } from '../constants/colours';
 import { useCallback, useEffect, useState } from 'react';
-import { Button } from '@rneui/themed';
 import { Modal } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import HeavyButton from './components/HeavyButton';
@@ -227,7 +226,13 @@ const ProgressBar = ({ skillId, skillName, goals, onLogPress, activities, isStre
                 <Text>{isStretch ? "Not Completed" : startValue}</Text>
                 <Text>{isStretch ? "Completed" : endValue}</Text>
             </View>
-            <Button title="Log" onPress={() => onLogPress(skillId)} />
+            <HeavyButton
+                title="Log"
+                onPress={() => onLogPress(skillId)}
+                color={colours.greyButtonBG}
+                borderColor={colours.primaryButtonBorder}
+                style={styles.logButton}
+            />
         </View>
     );
 };
@@ -345,8 +350,18 @@ const LogModal = ({ userId, skillId, visible, onClose, previousValue, groupedSki
                                 </Picker>
                             </View>
                         )}
-                        <HeavyButton onPress={handleLog} title="Log" style={styles.logModalButton} color={"#0099ff"} borderColor={"#33ccff"} />
-                        <HeavyButton onPress={onClose} title="Close" style={styles.logModalButton} />
+                        <HeavyButton
+                            onPress={handleLog}
+                            title="Log"
+                            style={styles.logModalButton}
+                            color={colours.primaryButtonBG}
+                            borderColor={colours.primaryButtonBorder}
+                        />
+                        <HeavyButton
+                            onPress={onClose}
+                            title="Close"
+                            style={styles.logModalButton}
+                        />
                     </TouchableOpacity>
                 </View>
             </TouchableOpacity>
@@ -527,6 +542,9 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
     },
+    logButton: {
+        marginBottom: -10,
+    }
 });
 
 export default Goals;

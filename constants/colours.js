@@ -1,7 +1,8 @@
 export const colours = {
     // Button colours
     greyButtonBG: '#262725',
-    primaryButtonBG: '#333',
+    primaryButtonBG: "#0099ff",
+    primaryButtonBorder: "#33ccff",
     buttonBorder: '#606060',
 
     // Background colours
