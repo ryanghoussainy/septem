@@ -184,7 +184,7 @@ const SkillActivity = ({ skillName, activities }) => {
   return (
     <View style={styles.card}>
       <TouchableOpacity onPress={() => setIsOpen(!isOpen)} activeOpacity={1}>
-        <Text style={styles.cardText}>
+        <Text style={[styles.skillTitle, styles.skillTitleTodayActivity]}>
           {isOpen ? "v " : "> "}
           {skillName}
         </Text>
@@ -421,6 +421,9 @@ const styles = StyleSheet.create({
   },
   achievedValueContainer: {
     flexDirection: "row",
+  },
+  skillTitleTodayActivity: {
+    color: colours.black,
   },
 });
 

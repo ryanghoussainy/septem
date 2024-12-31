@@ -17,6 +17,7 @@ export const colours = {
 
     // Common colours
     darkgrey: '#606060',
+    black: '#000',
 }
 
 // Different colour for each level of mastery
