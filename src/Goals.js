@@ -1,10 +1,14 @@
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { colours, masteryColours } from '../constants/colours';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@rneui/themed';
 import { Modal } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import HeavyButton from './components/HeavyButton';
+import { fetchGoals, getMaxAchievedValue, groupGoalsBySkillId } from './operations/Goals';
+import { useFocusEffect } from '@react-navigation/native';
+import { fetchUserActivity, groupActivityBySkillId, logActivity } from './operations/Activity';
+import { fetchSkills, groupSkillsById } from './operations/Skills';
 
 const PUSHUPS_MAX = 20;
 const dummyGoals = [
@@ -169,16 +173,25 @@ const groupBySkill = (data) => {
     return sortedGrouped;
 };
 
-const ProgressBar = ({ skill, goals, onLogPress }) => {
-    const achievedValue = goals[0].achieved_value;
-    const highestAchievedGoal = goals.filter(goal => goal.target_value <= achievedValue).pop();
-    const lowestNonAchievedGoal = goals.find(goal => goal.target_value > achievedValue);
+const ProgressBar = ({ skillId, skillName, goals, onLogPress, activities, isStretch }) => {
+    const achievedValue = activities ? getMaxAchievedValue(activities) : 0;
+
+    // Find the highest achieved goal and the lowest non-achieved goal
+    let highestAchievedGoal = null;
+    let lowestNonAchievedGoal = null;
+    for (let i = 0; i < goals.length; i++) {
+        if (achievedValue >= goals[i].target_value) {
+            highestAchievedGoal = goals[i];
+        } else {
+            lowestNonAchievedGoal = goals[i];
+            break;
+        }
+    }
 
     let progress = 0;
     let progressColor = colours.cardBG;
     let startValue = 0;
     let endValue = 0;
-    const isStretch = goals[0].is_stretch;
 
     if (!highestAchievedGoal) {
         // Case 1: Achieved value is between 0 and the first target
@@ -205,7 +218,7 @@ const ProgressBar = ({ skill, goals, onLogPress }) => {
 
     return (
         <View style={styles.progressBarContainer}>
-            <Text style={styles.skillTitle}>{skill}</Text>
+            <Text style={styles.skillTitle}>{skillName}</Text>
             <Text style={[styles.progressText, { left: `${progress}%`, color: progressColor }]}>{isStretch ? "" : achievedValue}</Text>
             <View style={styles.progressBar}>
                 <View style={[styles.progress, { width: `${progress}%`, backgroundColor: progressColor }]} />
@@ -214,7 +227,7 @@ const ProgressBar = ({ skill, goals, onLogPress }) => {
                 <Text>{isStretch ? "Not Completed" : startValue}</Text>
                 <Text>{isStretch ? "Completed" : endValue}</Text>
             </View>
-            <Button title="Log" onPress={() => onLogPress(goals[0])} />
+            <Button title="Log" onPress={() => onLogPress(skillId)} />
         </View>
     );
 };
@@ -225,39 +238,60 @@ const repsToTime = (reps) => {
     return { minutes, seconds };
 };
 
-const LogModal = ({ visible, onClose, goal }) => {
+const LogModal = ({ userId, skillId, visible, onClose, previousValue, groupedSkills }) => {
+    // Extract skill details
+    const skillName = groupedSkills[skillId].name;
+    const isStretch = groupedSkills[skillId].is_stretch;
+    const inSeconds = groupedSkills[skillId].in_seconds;
+    
     // Initialise state based on goal type
-    const [completed, setCompleted] = useState(goal.achieved_value == 1);
-    const { minutes: initialMinutes, seconds: initialSeconds } = repsToTime(goal.achieved_value);
+    const [completed, setCompleted] = useState(previousValue >= 1);
+    const { minutes: initialMinutes, seconds: initialSeconds } = repsToTime(previousValue);
     const [minutes, setMinutes] = useState(initialMinutes);
     const [seconds, setSeconds] = useState(initialSeconds);
-    const [value, setValue] = useState(goal.achieved_value);
+    const [reps, setReps] = useState(previousValue);
 
-    const handleLog = () => {
+    // Loading state for logging
+    const [loading, setLoading] = useState(false);
+
+    const handleLog = async () => {
         // Log the goal based on its type
-        if (goal.is_stretch) {
+        let value = 0;
+        if (isStretch) {
             // Case 1: Stretch is logged as a boolean (completed / not completed)
-            
-        } else if (goal.in_seconds) {
+            value = completed ? 1 : 0;
+        } else if (inSeconds) {
             // Case 2: Time goals are logged in seconds
-            const totalSeconds = minutes * 60 + seconds;
-            
+            value = minutes * 60 + seconds;
         } else {
             // Case 3: Reps are logged
-            
+            value = reps;
         }
+
+        // Log the goal
+        setLoading(true);
+        await logActivity(userId, skillId, value);
+        setLoading(false);
 
         // Close the modal
         onClose();
     };
+
+    if (loading) {
+        return (
+            <View style={[styles.container, styles.activityIndicator]}>
+                <ActivityIndicator size="large" color={colours.text} />
+            </View>
+        );
+    }
 
     return (
         <Modal visible={visible} transparent={true} animationType="fade">
             <TouchableOpacity activeOpacity={1} style={styles.logModalContainer} onPress={onClose}>
                 <View style={styles.logModalContent}>
                     <TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.logModalTouchableContainer}>
-                        <Text style={styles.logModalTitle}>{goal.name}</Text>
-                        {goal.is_stretch ? (
+                        <Text style={styles.logModalTitle}>{skillName}</Text>
+                        {isStretch ? (
                             <View>
                                 <Text style={styles.logModalSubText}>Did you complete it?</Text>
                                 <Picker 
@@ -270,7 +304,7 @@ const LogModal = ({ visible, onClose, goal }) => {
                                     <Picker.Item label="Yes" value={true} />
                                 </Picker>
                             </View>
-                        ) : goal.in_seconds ? (
+                        ) : inSeconds ? (
                             <View>
                                 <Text style={styles.logModalSubText}>Minutes</Text>
                                 <Picker
@@ -302,8 +336,8 @@ const LogModal = ({ visible, onClose, goal }) => {
                                 <Picker 
                                     style={styles.picker}
                                     dropdownIconColor={colours.subText}
-                                    selectedValue={value}
-                                    onValueChange={(itemValue) => setValue(itemValue)}
+                                    selectedValue={reps}
+                                    onValueChange={(itemValue) => setReps(itemValue)}
                                 >
                                     {[...Array(501).keys()].map((i) => (
                                         <Picker.Item key={i} label={`${i}`} value={i} />
@@ -320,38 +354,87 @@ const LogModal = ({ visible, onClose, goal }) => {
     );
 };
 
-const Goals = () => {
-    const groupedGoals = groupBySkill(dummyGoals);
+const Goals = ({ session }) => {
+    const [groupedSkills, setGroupedSkills] = useState([]);
+    const [groupedGoals, setGroupedGoals] = useState([]);
+    const [groupedActivity, setGroupedActivity] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const [logModalVisible, setLogModalVisible] = useState(false);
-    const [selectedGoal, setSelectedGoal] = useState(null);
+    const [selectedSkillId, setSelectedSkillId] = useState(null);
+
+    const fetchData = async () => {
+        // Fetch skills
+        const skills = await fetchSkills();
+        setGroupedSkills(groupSkillsById(skills));
+
+        // Fetch activity
+        const activity = await fetchUserActivity(session.user.id);
+        const groupedActivity = groupActivityBySkillId(activity);
+        setGroupedActivity(groupedActivity);
+
+        // Fetch goals
+        const goals = await fetchGoals();
+        setGroupedGoals(groupGoalsBySkillId(goals, groupedActivity));
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchData();
+        }, [])
+    )
 
     useEffect(() => {
-        
+        fetchData();
+
+        setLoading(false);
     }, [])
 
-    const handleLog = (goal) => {
-        setSelectedGoal(goal);
+    const handleLog = (skillId) => {
+        setSelectedSkillId(skillId);
         setLogModalVisible(true);
     }
 
     const handleCloseLogModal = () => {
         setLogModalVisible(false);
-        setSelectedGoal(null);
+        setSelectedSkillId(null);
+
+        // Refresh data
+        fetchData();
+    }
+
+    // Loading screen
+    if (loading) {
+        return (
+            <View style={[styles.container, { justifyContent: "center" }]}>
+                <ActivityIndicator size="large" color={colours.text} />
+            </View>
+        )
     }
 
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollView}>
-                {groupedGoals.map(([skill, goals]) => (
-                    <ProgressBar key={skill} skill={skill} goals={goals} onLogPress={handleLog} />
+                {groupedGoals.map(([skillId, { goals }]) => (
+                    <ProgressBar
+                        key={skillId}
+                        skillId={skillId}
+                        skillName={groupedSkills[skillId].name}
+                        isStretch={groupedSkills[skillId].is_stretch}
+                        goals={goals}
+                        onLogPress={handleLog}
+                        activities={groupedActivity[skillId]}
+                    />
                 ))}
             </ScrollView>
-            {selectedGoal && (
+            {selectedSkillId && (
                 <LogModal
+                    userId={session.user.id}
+                    skillId={selectedSkillId}
                     visible={logModalVisible}
                     onClose={handleCloseLogModal}
-                    goal={selectedGoal}
+                    previousValue={groupedActivity[selectedSkillId] ? getMaxAchievedValue(groupedActivity[selectedSkillId]) : 0}
+                    groupedSkills={groupedSkills}
                 />
             )}
         </View>
@@ -435,6 +518,14 @@ const styles = StyleSheet.create({
     },
     logModalButton: {
         marginVertical: -10,
+    },
+    activityIndicator: {
+        justifyContent: 'center',
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
     },
 });
 
