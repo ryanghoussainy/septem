@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
-import { colours } from '../constants/colours';
-import HeavyButton from './components/HeavyButton';
-import { supabase } from '../lib/supabase';
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Alert } from "react-native";
+import { colours } from "../../constants/colours";
+import HeavyButton from "../components/HeavyButton";
+import { supabase } from "../../lib/supabase";
 
 const Settings = ({ session }) => {
   const [loading, setLoading] = useState(false);
@@ -11,7 +11,7 @@ const Settings = ({ session }) => {
     setLoading(true);
     const { error } = await supabase.auth.signOut();
     if (error) {
-      Alert.alert('Error signing out', error.message);
+      Alert.alert("Error signing out", error.message);
     }
     setLoading(false);
   };
@@ -21,7 +21,7 @@ const Settings = ({ session }) => {
       <Text style={styles.title}>Settings</Text>
       <HeavyButton
         style={styles.button}
-        title={loading ? 'Signing out...' : 'Sign Out'}
+        title={loading ? "Signing out..." : "Sign Out"}
         onPress={handleSignOut}
         disabled={loading}
       />
@@ -33,8 +33,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colours.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 16,
   },
   title: {
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   button: {
-    width: '80%',
+    width: "80%",
   },
 });
 

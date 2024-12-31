@@ -9,19 +9,22 @@ import {
   Modal,
   ActivityIndicator,
 } from "react-native";
-import { colours, masteryColours } from "../constants/colours";
+import { colours, masteryColours } from "../../constants/colours";
 import { useCallback, useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { fetchSkills, groupSkillsById } from "./operations/Skills";
-import { fetchUserActivity, groupActivityBySkillId } from "./operations/Activity";
-import { fetchGoals, groupGoalsBySkillId } from "./operations/Goals";
+import { fetchSkills, groupSkillsById } from "../operations/Skills";
+import {
+  fetchUserActivity,
+  groupActivityBySkillId,
+} from "../operations/Activity";
+import { fetchGoals, groupGoalsBySkillId } from "../operations/Goals";
 import { useFocusEffect } from "@react-navigation/native";
-import FancyDivider from "./components/FancyDivider";
-
+import FancyDivider from "../components/FancyDivider";
+import { fetchUser, updateUser } from "../operations/Users";
+import { compareDates, EQ, LT } from "../dates/Dates";
 
 const BADGE_SIZE = 50;
 const BADGE_MARGIN = 10; // Margin between badges
-
 
 const Badge = ({ goal, achievedCount, skillName, isStretch }) => {
   // Modal for badge details
@@ -61,9 +64,7 @@ const Badge = ({ goal, achievedCount, skillName, isStretch }) => {
         ]}
       >
         <Text style={styles.badgeText}>
-          {isGoalAchieved || isNextGoal
-            ? goal.code
-            : "???"}
+          {isGoalAchieved || isNextGoal ? goal.code : "???"}
         </Text>
       </View>
     );
@@ -124,9 +125,7 @@ const Badge = ({ goal, achievedCount, skillName, isStretch }) => {
                           : colours.subText,
                       }}
                     >
-                      {!isStretch
-                        ? goal.target_value + " "
-                        : ""}
+                      {!isStretch ? goal.target_value + " " : ""}
                     </Text>
                     {skillName}
                   </Text>
@@ -224,6 +223,7 @@ const SkillActivity = ({ skillName, activities }) => {
 const Home = ({ session }) => {
   const [groupedSkills, setGroupedSkills] = useState([]);
   const [groupedGoals, setGroupedGoals] = useState([]);
+  const [user, setUser] = useState({});
   const [groupedTodayActivity, setGroupedTodayActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -239,11 +239,11 @@ const Home = ({ session }) => {
     // Filter today's activity
     const today = new Date();
     const todayActivity = activity.filter(
-        (a) =>
-            new Date(a.created_at).getDate() === today.getDate() &&
-            new Date(a.created_at).getMonth() === today.getMonth() &&
-            new Date(a.created_at).getFullYear() === today.getFullYear()
-    )
+      (a) =>
+        new Date(a.created_at).getDate() === today.getDate() &&
+        new Date(a.created_at).getMonth() === today.getMonth() &&
+        new Date(a.created_at).getFullYear() === today.getFullYear()
+    );
 
     // Group today's activity by skill id
     const groupedTodayActivity = groupActivityBySkillId(todayActivity);
@@ -255,18 +255,61 @@ const Home = ({ session }) => {
     // Fetch goals and group by skill id
     const goals = await fetchGoals();
     setGroupedGoals(groupGoalsBySkillId(goals, groupedActivity));
+
+    // Fetch user from users table
+    const _user = await fetchUser(session.user.id);
+    setUser(_user);
+
+    // Convert last_acted to a date object
+    const lastActed = new Date(_user.last_acted);
+
+    // Get the date 1 day before today
+    const todayMinusOne = new Date();
+    todayMinusOne.setDate(todayMinusOne.getDate() - 1);
+
+    // Get the date 2 days before today
+    const todayMinusTwo = new Date();
+    todayMinusTwo.setDate(todayMinusTwo.getDate() - 2);
+
+    // Function to reset streak
+    const resetStreak = async () => {
+      await updateUser(session.user.id, {
+        last_acted: null,
+        streak: 0,
+        has_skip: false,
+      });
+    };
+
+    if (_user.last_acted != null) {
+      if (compareDates(lastActed, todayMinusTwo) === EQ) {
+        if (_user.has_skip) {
+          // Use the skip
+          await updateUser(session.user.id, {
+            last_acted: todayMinusOne.toISOString(),
+            has_skip: false,
+            streak: _user.streak + 1,
+          })
+        } else {
+          // Reset streak
+          await resetStreak();
+        }
+      } else if (compareDates(lastActed, todayMinusTwo) === LT) {
+        // Reset streak
+        await resetStreak();
+      }
+    }
   };
 
   // Fetch data when user navigates to the screen
   useFocusEffect(
     useCallback(() => {
-        fetchData();
+      fetchData();
     }, [])
   );
 
   // Fetch data when the screen is first loaded
   useEffect(() => {
-    fetchData()
+    fetchData();
 
     setLoading(false);
   }, []);
@@ -274,16 +317,26 @@ const Home = ({ session }) => {
   // Loading screen
   if (loading) {
     return (
-        <View style={[styles.container, { justifyContent: "center" }]}>
-            <ActivityIndicator size="large" color={colours.text} />
-        </View>
-    )
+      <View style={[styles.container, { justifyContent: "center" }]}>
+        <ActivityIndicator size="large" color={colours.text} />
+      </View>
+    );
   }
-  
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollViewContent}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollViewContent}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>Septem</Text>
+        
+        <View style={styles.streakContainer}>
+          <Ionicons name="flame" size={24} color="orange" />
+          <Text style={{ color: colours.text, fontSize: 16, textAlign: "center" }}>
+            {user.streak}
+          </Text>
+        </View>
       </View>
 
       {/* Today's activity */}
@@ -342,6 +395,8 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: colours.greyButtonBG,
     borderRadius: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   title: {
     color: colours.text,
@@ -424,6 +479,9 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
   },
+  streakContainer: {
+    alignItems: "center",
+  }
 });
 
 export default Home;

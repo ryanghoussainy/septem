@@ -60,12 +60,11 @@ export const logActivity = async (
             ]);
         
         if (error) {
-            consele.log(error.message);
             Alert.alert(error.message);
-            return;
+            return false;
         }
     
-        return;
+        return true;
         
     } catch (error) {
         Alert.alert(error.message);

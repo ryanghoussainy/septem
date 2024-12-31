@@ -1,13 +1,15 @@
 import { ScrollView, StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { colours, masteryColours } from '../constants/colours';
+import { colours, masteryColours } from '../../constants/colours';
 import { useCallback, useEffect, useState } from 'react';
 import { Modal } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import HeavyButton from './components/HeavyButton';
-import { fetchGoals, getMaxAchievedValue, groupGoalsBySkillId } from './operations/Goals';
+import HeavyButton from '../components/HeavyButton';
+import { fetchGoals, getMaxAchievedValue, groupGoalsBySkillId } from '../operations/Goals';
 import { useFocusEffect } from '@react-navigation/native';
-import { fetchUserActivity, groupActivityBySkillId, logActivity } from './operations/Activity';
-import { fetchSkills, groupSkillsById } from './operations/Skills';
+import { fetchUserActivity, groupActivityBySkillId, logActivity } from '../operations/Activity';
+import { fetchSkills, groupSkillsById } from '../operations/Skills';
+import { compareDates, EQ } from '../dates/Dates';
+import { fetchUser, updateUser } from '../operations/Users';
 
 
 const ProgressBar = ({ skillId, skillName, goals, onLogPress, activities, isStretch }) => {
@@ -81,7 +83,7 @@ const repsToTime = (reps) => {
     return { minutes, seconds };
 };
 
-const LogModal = ({ userId, skillId, visible, onClose, previousValue, groupedSkills }) => {
+const LogModal = ({ user, skillId, visible, onClose, previousValue, groupedSkills }) => {
     // Extract skill details
     const skillName = groupedSkills[skillId].name;
     const isStretch = groupedSkills[skillId].is_stretch;
@@ -113,8 +115,40 @@ const LogModal = ({ userId, skillId, visible, onClose, previousValue, groupedSki
 
         // Log the goal
         setLoading(true);
-        await logActivity(userId, skillId, value);
+        const success = await logActivity(user.id, skillId, value);
         setLoading(false);
+
+        if (success) {
+            // Get the user's last acted date and streak
+            const lastActed = new Date(user.last_acted);
+            const streak = user.streak;
+            
+            // Get today's date
+            const today = new Date();
+            
+            // Initialise new values
+            let updates = {};
+
+            // If the user hasn't acted today, increment the streak
+            if (compareDates(lastActed, today) !== EQ) {
+                updates = {
+                    last_acted: today.toISOString(),
+                    streak: streak + 1,
+                    has_skip: false,
+                };
+            }
+
+            // If the achieved value is greater than the previous value, the user gains a skip
+            if (value > previousValue) {
+                updates = {
+                    ...updates,
+                    has_skip: true,
+                }
+            }
+
+            // Update the user's information
+            await updateUser(user.id, updates);
+        }
 
         // Close the modal
         onClose();
@@ -211,6 +245,7 @@ const Goals = ({ session }) => {
     const [groupedSkills, setGroupedSkills] = useState([]);
     const [groupedGoals, setGroupedGoals] = useState([]);
     const [groupedActivity, setGroupedActivity] = useState([]);
+    const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const [logModalVisible, setLogModalVisible] = useState(false);
@@ -229,6 +264,9 @@ const Goals = ({ session }) => {
         // Fetch goals
         const goals = await fetchGoals();
         setGroupedGoals(groupGoalsBySkillId(goals, groupedActivity));
+
+        // Fetch user
+        setUser(await fetchUser(session.user.id));
     };
 
     useFocusEffect(
@@ -282,7 +320,7 @@ const Goals = ({ session }) => {
             </ScrollView>
             {selectedSkillId && (
                 <LogModal
-                    userId={session.user.id}
+                    user={user}
                     skillId={selectedSkillId}
                     visible={logModalVisible}
                     onClose={handleCloseLogModal}
