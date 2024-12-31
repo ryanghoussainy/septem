@@ -22,6 +22,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import FancyDivider from "../components/FancyDivider";
 import { fetchUser, updateUser } from "../operations/Users";
 import { compareDates, EQ, LT } from "../dates/Dates";
+import { icon_colours, icons } from "../../constants/streak_icon";
 
 const BADGE_SIZE = 50;
 const BADGE_MARGIN = 10; // Margin between badges
@@ -83,24 +84,24 @@ const Badge = ({ goal, achievedCount, skillName, isStretch }) => {
       >
         <TouchableOpacity
           activeOpacity={1}
-          style={styles.badgeModalContainer}
+          style={styles.modalContainer}
           onPress={() => setBadgeModalVisible(false)}
         >
-          <View style={styles.badgeModalContent}>
+          <View style={styles.modalContent}>
             <TouchableOpacity
-              style={styles.badgeModalTouchableContainer}
+              style={styles.modalTouchableContainer}
               activeOpacity={1}
               onPress={() => {
                 /* Prevent closing modal when badge is pressed */
               }}
             >
               {/* Badge at the top */}
-              <View style={styles.badgeModalBadge}>
+              <View style={styles.modalBadge}>
                 <_Badge />
               </View>
 
               {/* Achievement name, mastery and target value */}
-              <Text style={styles.badgeModalText}>
+              <Text style={styles.modalText}>
                 {isGoalAchieved || isNextGoal ? (
                   <Text>
                     {skillName + " "}
@@ -220,6 +221,101 @@ const SkillActivity = ({ skillName, activities }) => {
   );
 };
 
+const Streak = ({ streak, user, fetchData }) => {
+  const [streakModalVisible, setStreakModalVisible] = useState(false);
+  const [iconColourModalVisible, setIconColourModalVisible] = useState(false);
+  const [selectedIcon, setSelectedIcon] = useState(null);
+
+  let { width, height } = useWindowDimensions();
+
+  const onSelectIcon = (icon) => {
+    setSelectedIcon(icon);
+    setIconColourModalVisible(true);
+  }
+
+  const onSelectColour = (colour) => {
+    updateUser(user.id, {
+      streak_icon_name: selectedIcon,
+      streak_icon_colour: colour,
+    })
+    setIconColourModalVisible(false);
+    setStreakModalVisible(false);
+
+    fetchData();
+  }
+
+  return (
+    <TouchableOpacity style={styles.streakContainer} onPress={() => setStreakModalVisible(true)}>
+      <Ionicons name={user.streak_icon_name} size={24} color={user.streak_icon_colour} />
+      <Text style={styles.streakText}>
+        {streak}
+      </Text>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={streakModalVisible}
+        onRequestClose={() => setStreakModalVisible(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.modalContainer}
+          onPress={() => setStreakModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.modalTouchableContainer}
+              activeOpacity={1}
+              onPress={() => {
+                /* Prevent closing modal when badge is pressed */
+              }}
+            >
+              <ScrollView style={{ maxWidth: width * 0.7, maxHeight: height * 0.4 }} contentContainerStyle={styles.iconGrid}>
+                {icons.map((icon) => (
+                  <TouchableOpacity key={icon} onPress={() => onSelectIcon(icon)} style={styles.iconButton}>
+                    <Ionicons name={icon} size={32} color={colours.text} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={iconColourModalVisible}
+        onRequestClose={() => setIconColourModalVisible(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.modalContainer}
+          onPress={() => setIconColourModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.modalTouchableContainer}
+              activeOpacity={1}
+              onPress={() => {
+                /* Prevent closing modal when badge is pressed */
+              }}
+            >
+              <Text style={styles.modalText}>
+                {icon_colours.map((colour) => (
+                  <TouchableOpacity key={colour} onPress={() => onSelectColour(colour)} style={styles.iconButton}>
+                    <Ionicons name={selectedIcon} size={32} color={colour} style={styles.iconButton} />
+                  </TouchableOpacity>
+                ))}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </TouchableOpacity>
+  )
+}
+
 const Home = ({ session }) => {
   const [groupedSkills, setGroupedSkills] = useState([]);
   const [groupedGoals, setGroupedGoals] = useState([]);
@@ -330,13 +426,9 @@ const Home = ({ session }) => {
     >
       <View style={styles.header}>
         <Text style={styles.title}>Septem</Text>
-        
-        <View style={styles.streakContainer}>
-          <Ionicons name="flame" size={24} color="orange" />
-          <Text style={{ color: colours.text, fontSize: 16, textAlign: "center" }}>
-            {user.streak}
-          </Text>
-        </View>
+
+        {/* Streak */}
+        <Streak streak={user.streak} user={user} fetchData={fetchData}/>
       </View>
 
       {/* Today's activity */}
@@ -446,26 +538,26 @@ const styles = StyleSheet.create({
     lineHeight: 50,
     fontWeight: "bold",
   },
-  badgeModalContainer: {
+  modalContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
-  badgeModalContent: {
+  modalContent: {
     backgroundColor: colours.bg,
     borderRadius: 8,
     elevation: 5,
   },
-  badgeModalTouchableContainer: {
+  modalTouchableContainer: {
     padding: 20,
     paddingTop: 30,
   },
-  badgeModalText: {
+  modalText: {
     color: colours.text,
     fontSize: 16,
   },
-  badgeModalBadge: {
+  modalBadge: {
     position: "absolute",
     top: -BADGE_SIZE / 2,
     alignSelf: "center",
@@ -481,7 +573,21 @@ const styles = StyleSheet.create({
   },
   streakContainer: {
     alignItems: "center",
-  }
+  },
+  streakText: {
+    color: colours.text,
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  iconGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  iconButton: {
+    margin: 10,
+  },
 });
 
 export default Home;
