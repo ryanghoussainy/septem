@@ -16,6 +16,7 @@ import { fetchSkills, groupSkillsById } from "./operations/Skills";
 import { fetchUserActivity, groupActivityBySkillId } from "./operations/Activity";
 import { fetchGoals, groupGoalsBySkillId } from "./operations/Goals";
 import { useFocusEffect } from "@react-navigation/native";
+import FancyDivider from "./components/FancyDivider";
 
 
 const BADGE_SIZE = 50;
@@ -155,7 +156,7 @@ const SkillAchievements = ({ goals, achievedCount, skillName, isStretch }) => {
 
   return (
     <View>
-      <Text style={styles.skillTitle}>{skillName}</Text>
+      <FancyDivider title={skillName} />
       {rows.map((row, rowIndex) => (
         <View key={rowIndex} style={styles.badgeRow}>
           {row.map((goal) => {
@@ -171,8 +172,6 @@ const SkillAchievements = ({ goals, achievedCount, skillName, isStretch }) => {
           })}
         </View>
       ))}
-
-      <Divider style={styles.divider} />
     </View>
   );
 };
@@ -184,7 +183,7 @@ const SkillActivity = ({ skillName, activities }) => {
   return (
     <View style={styles.card}>
       <TouchableOpacity onPress={() => setIsOpen(!isOpen)} activeOpacity={1}>
-        <Text style={[styles.skillTitle, styles.skillTitleTodayActivity]}>
+        <Text style={[styles.skillTitleTodayActivity]}>
           {isOpen ? "v " : "> "}
           {skillName}
         </Text>
@@ -282,7 +281,7 @@ const Home = ({ session }) => {
   }
   
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollViewContent}>
       <View style={styles.header}>
         <Text style={styles.title}>Septem</Text>
       </View>
@@ -332,6 +331,9 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 40,
   },
+  scrollViewContent: {
+    paddingBottom: 20,
+  },
   divider: {
     marginVertical: 10,
   },
@@ -351,16 +353,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 15,
     color: colours.text,
-  },
-  skillTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: colours.subText,
   },
   card: {
     backgroundColor: colours.cardBG,
@@ -424,6 +420,9 @@ const styles = StyleSheet.create({
   },
   skillTitleTodayActivity: {
     color: colours.black,
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 10,
   },
 });
 
