@@ -21,6 +21,7 @@ const ProgressBar = ({
     onLogPress,
     activities,
     isStretch,
+    inSeconds,
     justLoggedActivity,
     setJustLoggedActivity,
     fetchData,
@@ -105,13 +106,34 @@ const ProgressBar = ({
                     </TouchableOpacity>
                 )}
             </View>
-            <Text style={[styles.progressText, { left: `${progress}%`, color: progressColor }]}>{isStretch ? "" : achievedValue}</Text>
+            <Text style={[
+                styles.progressText,
+                { left: `${progress}%`, color: progressColor, transform: [{ translateX: -progress / 2 }] }
+            ]}>
+                {isStretch ?
+                    "" : inSeconds ?
+                    repsToTimeStr(achievedValue) :
+                    achievedValue
+                }
+            </Text>
             <View style={styles.progressBar}>
                 <View style={[styles.progress, { width: `${progress}%`, backgroundColor: progressColor }]} />
             </View>
             <View style={styles.progressBarLabels}>
-                <Text>{isStretch ? "Not Completed" : startValue}</Text>
-                <Text>{isStretch ? "Completed" : endValue}</Text>
+                <Text>
+                    {isStretch ? 
+                        "Not Completed" : inSeconds ? 
+                        repsToTimeStr(startValue) : 
+                        startValue
+                    }
+                </Text>
+                <Text>
+                    {isStretch ? 
+                        "Completed" : inSeconds ?
+                        repsToTimeStr(endValue) : 
+                        endValue
+                    }
+                </Text>
             </View>
             <HeavyButton
                 title="Log"
@@ -128,6 +150,11 @@ const repsToTime = (reps) => {
     const minutes = Math.floor(reps / 60);
     const seconds = reps % 60;
     return { minutes, seconds };
+};
+
+const repsToTimeStr = (reps) => {
+    const { minutes, seconds } = repsToTime(reps);
+    return seconds === 0 ? `${minutes}min` : `${minutes}min ${seconds}s`;
 };
 
 const LogModal = ({
@@ -377,9 +404,10 @@ const Goals = ({ session }) => {
                     <ProgressBar
                         key={skillId}
                         skillId={skillId}
-                        userId={user.id}
+                        userId={session.user.id}
                         skillName={groupedSkills[skillId].name}
                         isStretch={groupedSkills[skillId].is_stretch}
+                        inSeconds={groupedSkills[skillId].in_seconds}
                         goals={goals}
                         onLogPress={handleLog}
                         activities={groupedActivity[skillId]}
@@ -442,7 +470,6 @@ const styles = StyleSheet.create({
     progressText: {
         fontWeight: 'bold',
         marginBottom: 5,
-        transform: [{ translateX: -10 }],
     },
     progressBarLabels: {
         flexDirection: 'row',
