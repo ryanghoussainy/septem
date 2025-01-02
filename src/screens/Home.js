@@ -23,6 +23,7 @@ import FancyDivider from "../components/FancyDivider";
 import { fetchUser, updateUser } from "../operations/Users";
 import { compareDates, EQ, LT } from "../dates/Dates";
 import { icon_colours, icons } from "../../constants/streak_icon";
+import Push from "../components/Push";
 
 const BADGE_SIZE = 50;
 const BADGE_MARGIN = 10; // Margin between badges
@@ -465,6 +466,8 @@ const Home = ({ session }) => {
           />
         ))}
       </View>
+
+      <Push session={session} />
     </ScrollView>
   );
 };

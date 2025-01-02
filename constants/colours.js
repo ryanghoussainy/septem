@@ -4,6 +4,8 @@ export const colours = {
     primaryButtonBG: "#0099ff",
     primaryButtonBorder: "#33ccff",
     buttonBorder: '#606060',
+    redButtonBG: "#bb2d2d",
+    redButtonBorder: "#7b0d0d",
 
     // Background colours
     bg: '#1e1e1e',
