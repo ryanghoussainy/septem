@@ -27,7 +27,8 @@
     "expo-dev-client": "~5.0.8",
     "expo-notifications": "~0.29.11",
     "expo-device": "~7.0.1",
-    "expo-constants": "~17.0.3"
+    "expo-constants": "~17.0.3",
+    "expo-linear-gradient": "~14.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

@@ -24,6 +24,7 @@ import { fetchUser, updateUser } from "../operations/Users";
 import { compareDates, EQ, LT } from "../dates/Dates";
 import { icon_colours, icons } from "../../constants/streak_icon";
 import Push from "../components/Push";
+import { LinearGradient } from "expo-linear-gradient";
 
 const BADGE_SIZE = 50;
 const BADGE_MARGIN = 10; // Margin between badges
@@ -59,15 +60,23 @@ const Badge = ({ goal, achievedCount, skillName, isStretch }) => {
         style={[
           styles.badge,
           {
-            backgroundColor: isGoalAchieved
+            borderColor: isGoalAchieved
               ? masteryColours[goal.mastery]
               : colours.cardBG,
           },
         ]}
       >
-        <Text style={styles.badgeText}>
-          {isGoalAchieved || isNextGoal ? goal.code : "???"}
-        </Text>
+        <LinearGradient colors={[
+          isGoalAchieved
+            ? masteryColours[goal.mastery]
+            : colours.cardBG,
+          colours.bg
+        ]} 
+        style={styles.gradientContainer}>
+          <Text style={styles.badgeText}>
+            {isGoalAchieved || isNextGoal ? goal.code : "???"}
+          </Text>
+        </LinearGradient>
       </View>
     );
   };
@@ -532,14 +541,20 @@ const styles = StyleSheet.create({
   badge: {
     width: BADGE_SIZE,
     height: BADGE_SIZE,
-    borderRadius: BADGE_SIZE / 2,
+    borderRadius: 10,
     marginHorizontal: 5,
+    borderWidth: 2,
   },
   badgeText: {
     color: colours.text,
     textAlign: "center",
     lineHeight: 50,
     fontWeight: "bold",
+    transform: [{ translateY: -2 }], // Adjust height
+  },
+  gradientContainer: {
+    flex: 1,
+    borderRadius: 8,
   },
   modalContainer: {
     flex: 1,
