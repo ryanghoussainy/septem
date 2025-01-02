@@ -25,6 +25,9 @@ export default function Auth() {
 
   // Function to sign in with first name and password
   const signIn = async () => {
+    // Trim first name
+    setFirstName(firstName.trim());
+    
     // Ensure first name and password are provided
     if (!firstName || !password) {
       Alert.alert("First name and password are required");
