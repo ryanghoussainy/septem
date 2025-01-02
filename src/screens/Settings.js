@@ -1,12 +1,22 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Alert, ScrollView, Modal, TouchableOpacity } from "react-native";
+import { useState } from "react";
+import { View, Text, StyleSheet, Alert, ScrollView, Modal, TouchableOpacity, ActivityIndicator } from "react-native";
 import { colours } from "../../constants/colours";
 import HeavyButton from "../components/HeavyButton";
 import { supabase } from "../../lib/supabase";
+import Constants from "expo-constants";
 
 const Settings = ({ session }) => {
   const [loading, setLoading] = useState(false);
   const [signOutModalVisible, setSignOutModalVisible] = useState(false);
+
+  // Loading
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={colours.primary} />
+      </View>
+    )
+  }
 
   const SignOutModal = () => {
     return (
@@ -34,7 +44,6 @@ const Settings = ({ session }) => {
                 style={styles.button}
                 title="Sign Out"
                 onPress={handleSignOut}
-                disabled={loading}
                 color={colours.redButtonBG}
                 borderColor={colours.redButtonBorder}
               />
@@ -42,14 +51,13 @@ const Settings = ({ session }) => {
                 style={styles.button}
                 title="Cancel"
                 onPress={() => setSignOutModalVisible(false)}
-                disabled={loading}
               />
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
     );
-  }
+  };
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -58,18 +66,6 @@ const Settings = ({ session }) => {
       Alert.alert("Error signing out", error.message);
     }
     setLoading(false);
-  };
-
-  const handleNotifications = () => {
-    Alert.alert("Notifications", "Manage your notification preferences.");
-  };
-
-  const handleTutorial = () => {
-    Alert.alert("Tutorial", "Start the tutorial to learn more about the app.");
-  };
-
-  const handlePrivacyPolicy = () => {
-    Alert.alert("Privacy Policy", "Read our privacy policy.");
   };
 
   return (
@@ -83,13 +79,13 @@ const Settings = ({ session }) => {
         disabled={loading}
       />
 
-      <HeavyButton
-        style={styles.button}
-        title="Notifications"
-        onPress={handleNotifications}
-      />
-
       <SignOutModal />
+
+      <View style={styles.versionContainer}>
+        <Text style={{ color: colours.text, marginTop: 16 }}>
+          Septem Version {Constants.expoConfig.version}
+        </Text>
+      </View>
     </ScrollView>
   );
 };
@@ -133,6 +129,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: colours.text,
     marginBottom: 32,
+  },
+  versionContainer: {
+    position: "absolute",
+    bottom: 16,
+    left: 16,
   },
 });
 

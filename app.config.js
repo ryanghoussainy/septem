@@ -1,8 +1,9 @@
-{
+module.exports = {
   "expo": {
     "name": "septem",
     "slug": "septem",
     "version": "1.0.0",
+    "versionCode": 1,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,7 +22,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.ryzaman.septem",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": process.env.GOOGLE_SERVICES_JSON
     },
     "web": {
       "favicon": "./assets/favicon.png"
