@@ -27,7 +27,7 @@ export default function BottomTabNavigator({ session }) {
 
             return <Ionicons name={iconName} size={iconSize} color={color} />;
           },
-          tabBarActiveTintColor: "tomato",
+          tabBarActiveTintColor: colours.primaryButtonBG,
           tabBarInactiveTintColor: colours.outline,
           tabBarShowLabel: false,
           tabBarIconStyle: {
