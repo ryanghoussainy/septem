@@ -70,3 +70,34 @@ export const logActivity = async (
         Alert.alert(error.message);
     }
 }
+
+export const deleteMostRecentActivity = async (
+    userId,
+    skillId,
+) => {
+    try {
+        const { data, error } = await supabase
+            .from('activity')
+            .delete()
+            .select('id')
+            .eq('user_id', userId)
+            .eq('skill_id', skillId)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (error) {
+            Alert.alert('Error retrieving or deleting activity:', error.message);
+            return;
+        }
+
+        if (data.length === 0) {
+            Alert.alert('No activity found to delete.');
+            return;
+        }
+
+        Alert.alert('Activity deleted successfully.');
+    } catch (err) {
+        Alert.alert('Unexpected error occurred:', err.message);
+    }
+};
+

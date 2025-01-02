@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { colours, masteryColours } from '../../constants/colours';
 import { useCallback, useEffect, useState } from 'react';
 import { Modal } from 'react-native';
@@ -6,13 +6,25 @@ import { Picker } from '@react-native-picker/picker';
 import HeavyButton from '../components/HeavyButton';
 import { fetchGoals, getMaxAchievedValue, groupGoalsBySkillId } from '../operations/Goals';
 import { useFocusEffect } from '@react-navigation/native';
-import { fetchUserActivity, groupActivityBySkillId, logActivity } from '../operations/Activity';
+import { deleteMostRecentActivity, fetchUserActivity, groupActivityBySkillId, logActivity } from '../operations/Activity';
 import { fetchSkills, groupSkillsById } from '../operations/Skills';
 import { compareDates, EQ } from '../dates/Dates';
 import { fetchUser, updateUser } from '../operations/Users';
+import { Ionicons } from '@expo/vector-icons';
 
 
-const ProgressBar = ({ skillId, skillName, goals, onLogPress, activities, isStretch }) => {
+const ProgressBar = ({
+    skillId,
+    userId,
+    skillName,
+    goals,
+    onLogPress,
+    activities,
+    isStretch,
+    justLoggedActivity,
+    setJustLoggedActivity,
+    fetchData,
+}) => {
     const achievedValue = activities ? getMaxAchievedValue(activities) : 0;
 
     // Find the highest achieved goal and the lowest non-achieved goal
@@ -57,7 +69,42 @@ const ProgressBar = ({ skillId, skillName, goals, onLogPress, activities, isStre
 
     return (
         <View style={styles.progressBarContainer}>
-            <Text style={styles.skillTitle}>{skillName}</Text>
+            <View style={styles.sideBySide}>
+                <Text style={styles.skillTitle}>{skillName}</Text>
+                {justLoggedActivity && justLoggedActivity.skillId === skillId && (
+                    <TouchableOpacity
+                        onPress={async () => {
+                            // Get warning confirmation 
+                            const confirm = await new Promise((resolve) => {
+                                Alert.alert(
+                                    "Undo last activity",
+                                    "Are you sure you want to undo the last activity you logged?",
+                                    [
+                                        {
+                                            text: "Cancel",
+                                            onPress: () => resolve(false),
+                                            style: "cancel",
+                                        },
+                                        { text: "OK", onPress: () => resolve(true) },
+                                    ]
+                                );
+                            });
+                            if (!confirm) return;
+
+                            // Delete the last logged activity
+                            await deleteMostRecentActivity(userId, skillId);
+
+                            // Reset the just logged activity
+                            setJustLoggedActivity(null);
+
+                            // Refresh data
+                            fetchData();
+                        }}
+                    >
+                        <Ionicons name="arrow-undo" size={24} color={colours.redButtonBG} />
+                    </TouchableOpacity>
+                )}
+            </View>
             <Text style={[styles.progressText, { left: `${progress}%`, color: progressColor }]}>{isStretch ? "" : achievedValue}</Text>
             <View style={styles.progressBar}>
                 <View style={[styles.progress, { width: `${progress}%`, backgroundColor: progressColor }]} />
@@ -83,7 +130,15 @@ const repsToTime = (reps) => {
     return { minutes, seconds };
 };
 
-const LogModal = ({ user, skillId, visible, onClose, previousValue, groupedSkills }) => {
+const LogModal = ({
+    user,
+    skillId,
+    visible,
+    onClose,
+    previousValue,
+    groupedSkills,
+    setJustLoggedActivity,
+}) => {
     // Extract skill details
     const skillName = groupedSkills[skillId].name;
     const isStretch = groupedSkills[skillId].is_stretch;
@@ -116,8 +171,13 @@ const LogModal = ({ user, skillId, visible, onClose, previousValue, groupedSkill
         // Log the goal
         setLoading(true);
         const success = await logActivity(user.id, skillId, value);
+        if (success) {
+            // Set the just logged activity for the user to be able to undo
+            setJustLoggedActivity({ skillId, value });
+        }
         setLoading(false);
 
+        // Streak logic
         if (success) {
             // Get the user's last acted date and streak
             const lastActed = new Date(user.last_acted);
@@ -251,6 +311,10 @@ const Goals = ({ session }) => {
     const [logModalVisible, setLogModalVisible] = useState(false);
     const [selectedSkillId, setSelectedSkillId] = useState(null);
 
+    /* Activity just logged by the user. This gets reset if the user closes the app.
+       This allows the user to undo the last activity they logged. */
+    const [justLoggedActivity, setJustLoggedActivity] = useState(null);
+
     const fetchData = async () => {
         // Fetch skills
         const skills = await fetchSkills();
@@ -310,11 +374,15 @@ const Goals = ({ session }) => {
                     <ProgressBar
                         key={skillId}
                         skillId={skillId}
+                        userId={user.id}
                         skillName={groupedSkills[skillId].name}
                         isStretch={groupedSkills[skillId].is_stretch}
                         goals={goals}
                         onLogPress={handleLog}
                         activities={groupedActivity[skillId]}
+                        justLoggedActivity={justLoggedActivity}
+                        setJustLoggedActivity={setJustLoggedActivity}
+                        fetchData={fetchData}
                     />
                 ))}
             </ScrollView>
@@ -326,6 +394,7 @@ const Goals = ({ session }) => {
                     onClose={handleCloseLogModal}
                     previousValue={groupedActivity[selectedSkillId] ? getMaxAchievedValue(groupedActivity[selectedSkillId]) : 0}
                     groupedSkills={groupedSkills}
+                    setJustLoggedActivity={setJustLoggedActivity}
                 />
             )}
         </View>
@@ -420,6 +489,11 @@ const styles = StyleSheet.create({
     },
     logButton: {
         marginBottom: -10,
+    },
+    sideBySide: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: "99%",
     }
 });
 
