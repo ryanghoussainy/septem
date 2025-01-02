@@ -175,6 +175,10 @@ const LogModal = ({
             // Set the just logged activity for the user to be able to undo
             setJustLoggedActivity({ skillId, value });
         }
+
+        // Close the modal
+        onClose();
+
         setLoading(false);
 
         // Streak logic
@@ -209,16 +213,15 @@ const LogModal = ({
             // Update the user's information
             await updateUser(user.id, updates);
         }
-
-        // Close the modal
-        onClose();
     };
 
     if (loading) {
         return (
-            <View style={[styles.container, styles.activityIndicator]}>
-                <ActivityIndicator size="large" color={colours.text} />
-            </View>
+            <Modal visible transparent animationType="fade">
+                <View style={styles.logModalContainer}>
+                    <ActivityIndicator size="large" color={colours.primaryButtonBG} />
+                </View>
+            </Modal>
         );
     }
 
@@ -478,14 +481,6 @@ const styles = StyleSheet.create({
     },
     logModalButton: {
         marginVertical: -10,
-    },
-    activityIndicator: {
-        justifyContent: 'center',
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
     },
     logButton: {
         marginBottom: -10,
