@@ -32,6 +32,20 @@ module.exports = {
         "projectId": "c4939041-6eac-4094-b8b4-13ff99aa1beb"
       }
     },
-    "owner": "ryzaman"
+    "owner": "ryzaman",
+    "plugins": [
+      [
+        "expo-updates",
+        {
+          "username": "ryzaman",
+        }
+      ]
+    ],
+    "updates": {
+      "url": "https://u.expo.dev/c4939041-6eac-4094-b8b4-13ff99aa1beb"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }

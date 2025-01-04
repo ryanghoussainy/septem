@@ -6,7 +6,7 @@ import Auth from "./src/screens/Auth";
 import { colours } from "./constants/colours";
 import BottomTabNavigator from "./src/navigation/BottomTabNavigator";
 import { needToUpdate } from "./src/operations/Versions";
-import Constants from "expo-constants";
+import * as Updates from 'expo-updates';
 
 export default function App() {
   // Get session
@@ -21,19 +21,37 @@ export default function App() {
     });
   }, []);
 
-  // Check app version
+  // Check app version for updates
   const [mandatoryUpdate, setMandatoryUpdate] = useState(false);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     const checkVersion = async () => {
       setMandatoryUpdate(
-        await needToUpdate(Constants.expoConfig.version)
+        await needToUpdate()
       );
       setLoading(false);
     };
 
     checkVersion();
   }, []);
+
+  // Check for over-the-air updates (no need to download a new version)
+  async function onFetchUpdateAsync() {
+    try {
+      const update = await Updates.checkForUpdateAsync();
+
+      if (update.isAvailable) {
+        await Updates.fetchUpdateAsync();
+        await Updates.reloadAsync();
+      }
+    } catch (error) {
+      alert(`Error fetching latest Expo update: ${error}`);
+    }
+  }
+
+  useEffect(() => {
+    onFetchUpdateAsync();
+  }, [])
 
   if (loading) {
     return (
